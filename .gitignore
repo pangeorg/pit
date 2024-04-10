@@ -1,3 +1,4 @@
 .pit/
 *.pyc
 .venv/
+tests/test_*/

@@ -8,4 +8,11 @@ class Workspace:
     def list_files(self):
         from glob import glob
         paths = glob(str(self.basepath) + "/**/*", recursive=True)
-        return [self.basepath / Path(filepath) for filepath in paths]
+        for path in paths:
+            yield self.basepath / Path(path)
+
+    def read_file(self, filepath: str | Path): 
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+        with open(filepath, "rb") as f:
+            return f.read()
