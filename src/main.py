@@ -28,7 +28,7 @@ def main():
     command = args.command
     match command:
         case "cat-file":
-            return cat_file(args)
+            return cat_file(args.object)
         case "init":
             return init()
         case "commit":
