@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from pit.blob import Blob
+from pit.objects import Encodable
 import tempfile
 import zlib
 
@@ -9,7 +9,7 @@ class Database:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(os.path.abspath(path))
 
-    def store(self, obj: Blob):
+    def store(self, obj: Encodable):
         content = obj.db_encode()
         write_object(obj.oid, content)
 

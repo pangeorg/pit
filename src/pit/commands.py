@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from pit.workspace import Workspace
 from pit.database import Database
-from pit.blob import Blob
+from pit.objects import Blob, Tree
 import logging
 
 logger = logging.getLogger(__name__)
@@ -49,26 +49,29 @@ def init(cwd: str | Path | None = None):
 
 
 def commit(cwd: str | Path | None = None):
+    from glob import glob
+
     if not cwd:
         cwd = Path(os.getcwd())
-    pit_path = Path(cwd) / Path(".pit")
-
-    if not os.path.exists(pit_path):
-        print("Not a pit repo")
-        return 1
+    ws = Workspace(cwd)
+    pit_path = Path(ws.basepath) / Path(".pit")
 
     db_path = pit_path / Path("objects")
-    ws = Workspace(cwd)
     db = Database(db_path)
 
-    for path in ws.list_files():
-        if os.path.isdir(path):
-            print("Folders are not yet supported...")
-            continue
-        else:
-            with open(path, "rb") as f:
-                data = Blob(f.read())
-                print(type(data))
-        db.store(data)
+    def build_tree(path):
+        t = Tree(name=Path(path).name)
+        for p in glob(str(path) + "/*"):
+            if os.path.isdir(p):
+                t.add_object(build_tree(p))
+            else:
+                with open(p, "rb") as f:
+                    blob = Blob(data=f.read(), name=Path(p).name)
+                t.add_object(blob)
+        return t
+
+    tree = build_tree(ws.basepath)
+    tree.print()
+    # db.store(tree)
 
     return 0
