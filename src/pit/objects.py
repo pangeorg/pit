@@ -55,8 +55,8 @@ class Blob(Encodable):
         self.oid: str = ""
 
     def db_encode(self) -> bytes:
-        bytesize = len(self.data) + 1
-        content = bytes_concat(f"{self.object_type} ", bytesize, "\0", self.data, "\n")
+        bytesize = len(self.data)
+        content = bytes_concat(f"{self.object_type} ", bytesize, "\0", self.data)
         m = sha1()
         m.update(content)
         self.oid = m.hexdigest()

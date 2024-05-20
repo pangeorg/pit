@@ -2,3 +2,11 @@
 *.pyc
 .venv/
 tests/test_*/
+.pit/
+.pit/
+.pit/
+.pit/
+.pit/
+.pit/
+.pit/
+.pit/

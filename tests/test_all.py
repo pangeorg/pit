@@ -1,4 +1,4 @@
-from pit.blob import Blob
+from pit.objects import Blob
 import os
 from pathlib import Path
 import shutil
@@ -17,19 +17,30 @@ def create_file(path: str | Path, content: str):
 
 
 def setup(path):
+    import subprocess
+
+    os.makedirs(Path(path), exist_ok=True)
     create_file(Path(path) / Path("a.txt"), "This is A")
     create_file(Path(path) / Path("b.txt"), "This is B")
     create_file(Path(path) / Path("c.txt"), "This is C")
+    create_file(Path(path) / Path(".gitignore"), ".pit/")
     os.makedirs(Path(path) / Path("folder"))
     create_file(Path(path) / Path("folder") / Path("d.txt"), "This is D")
+
+    cwd = os.getcwd()
+    os.chdir(path)
+    subprocess.run(["echo", '".pit/"', ">>", ".gitignore"])
+    subprocess.run(["git", "init"])
+    subprocess.run(["git", "add", "."])
+    os.chdir(cwd)
 
 
 def test_encode():
     data = bytes("world", encoding="ascii")
-    blob = Blob(data)
+    blob = Blob(name="world.txt", data=data)
     content = blob.db_encode()
-    assert blob.oid == "cc628ccd10742baea8241c5924df992b5c019f71"
-    assert str(content, encoding="ascii") == "blob 6\x00world\n"
+    assert blob.oid == "04fea06420ca60892f73becee3614f6d023a4b7f"
+    assert str(content, encoding="ascii") == "blob 5\x00world"
 
 
 def test_init():
@@ -48,6 +59,12 @@ def test_init():
     cleanup(Path(test_dir))
 
 
+def test_add():
+    from pit.commands import add
+
+    pass
+
+
 def test_commit():
     from pit.commands import commit, init
 
@@ -59,5 +76,6 @@ def test_commit():
     r = init(test_dir)
     assert r == 0
     commit(test_dir)
+    assert False
 
-    cleanup(Path(test_dir))
+    # cleanup(Path(test_dir))
