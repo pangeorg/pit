@@ -26,12 +26,14 @@ def setup(path):
     create_file(Path(path) / Path(".gitignore"), ".pit/")
     os.makedirs(Path(path) / Path("folder"))
     create_file(Path(path) / Path("folder") / Path("d.txt"), "This is D")
+    create_file(Path(path) / Path("folder") / Path("e.txt"), "This is E")
 
     cwd = os.getcwd()
     os.chdir(path)
-    subprocess.run(["echo", '".pit/"', ">>", ".gitignore"])
     subprocess.run(["git", "init"])
+    subprocess.run(["git", "add", ".gitignore"])
     subprocess.run(["git", "add", "."])
+    subprocess.run(["git", "commit", "-m", '"initial"'])
     os.chdir(cwd)
 
 

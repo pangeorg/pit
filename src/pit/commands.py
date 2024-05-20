@@ -76,8 +76,8 @@ def commit(cwd: str | Path | None = None):
     db = Database(db_path)
     for f in ws.list_files():
         if os.path.isdir(f):
-            # tree = build_tree(ws.basepath)
-            # db.store(tree)
+            tree = build_tree(ws.basepath)
+            db.store(tree)
             continue
         else:
             with open(f, "rb") as fi:

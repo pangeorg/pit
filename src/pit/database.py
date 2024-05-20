@@ -14,7 +14,7 @@ class Database:
         self.write_object(obj.oid, content)
 
     def write_object(self, oid: str, content: bytes):
-        obj_path = Path(self.path) / Path(oid[:2]) / Path(oid[3:])
+        obj_path = Path(self.path) / Path(oid[:2]) / Path(oid[2:])
         dirname = Path(os.path.dirname(obj_path))
         if not os.path.exists(dirname):
             os.makedirs(dirname)
