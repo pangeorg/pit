@@ -1,87 +1,93 @@
-import os
-from glob import glob
+import sys
 from pathlib import Path
-from pit.workspace import Workspace
-from pit.database import Database
-from pit.objects import Blob, Tree
 import logging
 from typing import List
+from pit.repo import (
+    repo_create,
+    repo_find,
+    Repository,
+)
+from pit.objects import (
+    object_read,
+    object_find,
+    object_hash,
+    PitTree
+)
 
 logger = logging.getLogger(__name__)
 
-# NOTE
-# refactor all commands to receive the workspace
+
+def cmd_ls_tree(args):
+    repo = repo_find()
+    ls_tree(repo, args.tree, args.recursive)
 
 
-def build_tree(path):
-    t = Tree(name=Path(path).name)
-    for p in glob(str(path) + "/*"):
-        if os.path.isdir(p):
-            t.add_object(build_tree(p))
+def ls_tree(repo: Repository, ref: str, recursive=None, prefix=""):
+    import os
+    sha = object_find(repo, ref, fmt=b"tree")
+    obj: PitTree = object_read(repo, sha)
+    for item in obj.items:
+        if len(item.mode) == 5:
+            type = item.mode[0:1]
         else:
-            with open(p, "rb") as f:
-                blob = Blob(data=f.read(), name=Path(p).name)
-            t.add_object(blob)
-    return t
+            type = item.mode[0:2]
+
+        match type:  # Determine the type.
+            case b'04': type = "tree"
+            case b'10': type = "blob"  # A regular file.
+            # A symlink. Blob contents is link target.
+            case b'12': type = "blob"
+            case b'16': type = "commit"  # A submodule
+            case _: raise Exception(f"Weird tree leaf mode {item.mode}")
+
+        if not (recursive and type == 'tree'):  # This is a leaf
+            print("{0} {1} {2}\t{3}".format(
+                "0" * (6 - len(item.mode)) + item.mode.decode("ascii"),
+                # Git's ls-tree displays the type
+                # of the object pointed to.  We can do that too :)
+                type,
+                item.sha,
+                os.path.join(prefix, item.path)))
+        else:  # This is a branch, recurse
+            ls_tree(repo, item.sha, recursive, os.path.join(prefix, item.path))
 
 
-def cat_file(id_: str, cwd: str | Path | None = None):
-    if not cwd:
-        cwd = Path(os.getcwd())
-    if len(id_) < 6:
-        logger.error("Need at least 5 characters")
-        return 1
-    folder = Path(cwd) / Path(".git") / Path("objects") / Path(id_[:2])
-    if not os.path.exists(folder):
-        logger.error(f"Cannot find object with id {id_}")
-        return 1
+def cmd_hash_object(args) -> int:
+    if args.write:
+        repo = repo_find()
+    else:
+        repo = None
 
-    import zlib
-    import sys
-    from glob import glob
-
-    files = glob(str(folder / Path(id_[2:])) + "*")
-    if not files:
-        logger.error(f"Cannot find object with id {id_}")
-        return 1
-
-    with open(files[0], "rb") as fb:
-        data = zlib.decompress(fb.read())
-        sys.stdout.buffer.write(data.split(b"\x00")[-1])
+    with open(args.path, "rb") as fd:
+        sha = object_hash(fd, args.type.encode(), repo)
+        sys.stdout.buffer.write(sha + "\n")
+        sys.stdout.flush()
     return 0
 
 
-def init(cwd: str | Path | None = None):
-    if not cwd:
-        cwd = Path(os.getcwd())
-    if os.path.exists(Path(cwd) / Path(".pit")):
-        print("This already seems to be a pit repo")
-        return 1
-    os.makedirs(Path(cwd) / Path(".pit") / Path("objects"))
-    os.makedirs(Path(cwd) / Path(".pit") / Path("refs"))
+def hash_object(args) -> int:
+    return cmd_hash_object(args)
+
+
+def cmd_cat_file(args) -> int:
+    repo = repo_find()
+    return cat_file(repo, args.object, fmt=args.type.encode())
+
+
+def cat_file(repo, obj, fmt=None) -> int:
+    obj = object_read(repo, object_find(repo, obj, fmt=fmt))
+    sys.stdout.buffer.write(obj.serialize())
+    return 0
+
+
+def init(path: str | Path) -> int:
+    repo_create(path)
     return 0
 
 
 def add(cwd: str | Path | None = None, files: List[str] = []):
-    pass
+    raise NotImplementedError("Add not implemented")
 
 
 def commit(cwd: str | Path | None = None):
-    if not cwd:
-        cwd = Path(os.getcwd())
-    ws = Workspace(cwd)
-    pit_path = Path(ws.basepath) / Path(".pit")
-
-    db_path = pit_path / Path("objects")
-    db = Database(db_path)
-    for f in ws.list_files():
-        if os.path.isdir(f):
-            tree = build_tree(ws.basepath)
-            db.store(tree)
-            continue
-        else:
-            with open(f, "rb") as fi:
-                blob = Blob(data=fi.read(), name=Path(f).name)
-            db.store(blob)
-
-    return 0
+    raise NotImplementedError("Commit not implemented")
