@@ -6,16 +6,16 @@ import os
 class Repository:
     """The git repo"""
 
-    def __init__(self, path: str | Path, force=False):
+    def __init__(self, path: str | Path, force=True):
         self.worktree: Path = Path(path)
-        self.gitdir: Path = Path(path) / Path(".pit")
+        self.gitdir: Path = Path(path) / Path(".git")
 
         if not (force or os.path.isdir(self.gitdir)):
             raise Exception("Not a pit repo, %s", path)
 
         self.conf = self._read_config(force=force)
 
-    def _read_config(self, force=False):
+    def _read_config(self, force=True):
 
         config_file = repo_file(self, "config")
 

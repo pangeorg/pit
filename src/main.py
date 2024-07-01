@@ -2,10 +2,15 @@
 
 import argparse
 from pit.commands import (
-    cat_file,
+    cmd_cat_file,
     init,
     commit,
-    hash_object,
+    cmd_hash_object,
+    cmd_ls_tree,
+    cmd_checkout,
+    cmd_show_ref,
+    cmd_tag,
+    cmd_rev_parse,
 )
 
 
@@ -80,6 +85,57 @@ def ls_tree_parser(subparsers) -> None:
                        help="A tree-ish object.")
 
 
+def checkout_parser(subparsers) -> None:
+    argsp = subparsers.add_parser(
+        "checkout", help="Checkout a commit inside a directory")
+    argsp.add_argument("commit",
+                       help="The commit or tree to checkout.")
+
+    argsp.add_argument("path",
+                       help="The empty path to checkout on.")
+
+
+def showref_parser(subparsers) = > None:
+    argsp = subparsers.add_parser(
+        "show-ref", help="Show all references")
+
+
+def tag_parser(subparsers) = > None:
+    argsp = argsubparsers.add_parser(
+        "tag",
+        help="List and create tags")
+
+    argsp.add_argument("-a",
+                       action="store_true",
+                       dest="create_tag_object",
+                       help="Whether to create a tag object")
+
+    argsp.add_argument("name",
+                       nargs="?",
+                       help="The new tag's name")
+
+    argsp.add_argument("object",
+                       default="HEAD",
+                       nargs="?",
+                       help="The object the new tag will point to")
+
+
+def rev_parse_parser(subparsers):
+    argsp = subparsers.add_parser(
+        "rev-parse",
+        help="Parse revision (or other objects) identifiers")
+
+    argsp.add_argument("--type",
+                       metavar="type",
+                       dest="type",
+                       choices=["blob", "commit", "tag", "tree"],
+                       default=None,
+                       help="Specify the expected type")
+
+    argsp.add_argument("name",
+                       help="The name to parse")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Custom Git-like CLI tool")
     subparsers = parser.add_subparsers(dest="command", help="Subcommands")
@@ -87,19 +143,31 @@ def main():
     init_parser(subparsers)
     cat_file_parser(subparsers)
     hash_object_parser(subparsers)
+    ls_tree_parser(subparsers)
+    checkout_parser(subparsers)
+    rev_parse_parser(subparsers)
 
     args = parser.parse_args()
 
-    command = args.command
-    match command:
+    match args.command:
         case "cat-file":
-            return cat_file(args)
-        case "hash-object":
-            return hash_object(args)
-        case "init":
-            return init(args.path)
+            return cmd_cat_file(args)
+        case "checkout":
+            return cmd_checkout(args)
         case "commit":
             return commit()
+        case "show-ref":
+            return cmd_show_ref(args)
+        case "hash-object":
+            return cmd_hash_object(args)
+        case "init":
+            return init(args.path)
+        case "ls-tree":
+            return cmd_ls_tree(args)
+        case "rev-parse":
+            return cmd_rev_parse(args)
+        case "tag":
+            return cmd_tag(args)
         case _:
             parser.print_help()
     return 0
